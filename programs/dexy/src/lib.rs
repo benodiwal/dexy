@@ -36,6 +36,7 @@ pub struct Initialize<'info> {
     pub fee_account: Account<'info, TokenAccount>,
     #[account(mut)]
     pub destination: Account<'info, TokenAccount>,
+    /// CHECK: This is the Solana token program, which is a known, trusted program
     pub token_program: AccountInfo<'info>,
     pub system_program: Program<'info, System>,
 }
