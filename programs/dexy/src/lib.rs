@@ -1,5 +1,8 @@
+mod curve;
+
 use anchor_lang::{prelude::*, solana_program::program_option::COption};
 use anchor_spl::token::{self, Mint, MintTo, TokenAccount};
+use curve::fees::CurveFees;
 
 declare_id!("HRPryQD82JQcHALokdMpAYL83hUvSaSZGLKoHoFADvV");
 
@@ -8,7 +11,10 @@ pub mod dexy {
     use super::*;
 
     pub fn initialize(ctx: Context<Initialize>) -> Result<()> {
-        let (swap_authority, bump_seed) = Pubkey::find_program_address(&[b"amm"], ctx.program_id);
+        let (swap_authority, bump_seed) = Pubkey::find_program_address(
+            &[&ctx.accounts.amm.to_account_info().key.to_bytes()],
+            ctx.program_id,
+        );
         let _ = &ctx.accounts.validate_input_accounts(swap_authority)?;
         let _ = &mut ctx.accounts.mint_create_state_account(bump_seed)?;
 
@@ -148,14 +154,60 @@ pub struct Amm {
 
 #[error_code]
 pub enum SwapError {
+    #[msg("Swap account already in use")]
     AlreadyInUse,
+    #[msg("Invalid program address generated from bump seed and key")]
     InvalidProgramAddress,
+    #[msg("Input account owner is not the program address")]
     InvalidOwner,
+    #[msg("Output pool account owner cannot be the program address")]
     InvalidOuputOwner,
+    #[msg("Swap input token accounts have the same mint")]
     RepeatedMint,
+    #[msg("Token account has a delegate")]
     InvalidDelegate,
+    #[msg("Token account has a close authority")]
     InvalidCloseAuthority,
+    #[msg("Pool token supply is non-zero")]
     InvalidSupply,
+    #[msg("Pool token has a freeze authority")]
     InvalidFreezeAuthority,
+    #[msg("Address of the provided pool token mint is incorrect")]
     IncorrectPoolMint,
+}
+
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Default)]
+pub struct FeeInput {
+    pub trade_fee_numerator: u64,
+    pub trade_fee_denominator: u64,
+    pub owner_trade_fee_numerator: u64,
+    pub owner_trade_fee_denominator: u64,
+    pub owner_withdraw_fee_numerator: u64,
+    pub owner_withdraw_fee_denominator: u64,
+    pub host_fee_numerator: u64,
+    pub host_fee_denominator: u64,
+}
+
+pub fn build_fees(fee_input: &FeeInput) -> Result<CurveFees> {
+    let fees = CurveFees {
+        trade_fee_numerator: fee_input.trade_fee_numerator,
+        trade_fee_denominator: fee_input.trade_fee_denominator,
+        owner_trade_fee_numerator: fee_input.owner_trade_fee_numerator,
+        owner_trade_fee_denominator: fee_input.owner_trade_fee_denominator,
+        owner_withdraw_fee_numerator: fee_input.owner_withdraw_fee_numerator,
+        owner_withdraw_fee_denominator: fee_input.owner_withdraw_fee_denominator,
+        host_fee_numerator: fee_input.host_fee_numerator,
+        host_fee_denominator: fee_input.host_fee_denominator,
+    };
+    Ok(fees)
+}
+
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Default)]
+pub struct CurveInput {
+    pub curve_type: u8,
+    pub curve_params: u64,
+}
+
+pub fn build_curve(curve_input: &CurveInput) -> Result<()> {
+    Ok(())
 }
