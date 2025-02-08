@@ -174,6 +174,10 @@ pub enum SwapError {
     InvalidFreezeAuthority,
     #[msg("Address of the provided pool token mint is incorrect")]
     IncorrectPoolMint,
+    #[msg("Empty supply")]
+    EmptySupply,
+    #[msg("Invalid fees")]
+    InvalidFees,
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Default)]
